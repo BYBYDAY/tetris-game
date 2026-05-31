@@ -2,56 +2,73 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>经典俄罗斯方块</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
 body {
   background: #0a0a0a;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
   font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  overflow-y: auto;
   touch-action: manipulation;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 .game-wrapper {
   display: flex;
-  gap: 20px;
-  align-items: stretch;
-  padding: 20px;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 10px;
+  max-width: 100%;
+  max-height: 100vh;
 }
 .game-main {
   background: #1a1a2e;
   border: 2px solid #2a2a4a;
   border-radius: 12px;
-  padding: 10px;
+  padding: 8px;
   box-shadow: 0 0 30px rgba(0,229,255,0.08);
+  flex-shrink: 0;
 }
-canvas#gameCanvas { display: block; border-radius: 4px; }
+canvas#gameCanvas {
+  display: block;
+  border-radius: 4px;
+  max-width: 100%;
+  height: auto;
+}
 .side-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  min-width: 150px;
+  gap: 12px;
+  min-width: 140px;
+  flex-shrink: 0;
 }
 .panel-box {
   background: #1a1a2e;
   border: 2px solid #2a2a4a;
   border-radius: 12px;
-  padding: 14px;
+  padding: 12px;
   text-align: center;
 }
 .panel-box h3 {
   color: #00e5ff;
   font-size: 12px;
   letter-spacing: 2px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .stat-value {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
   color: #ffd740;
 }
@@ -72,37 +89,32 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
   cursor: pointer;
   letter-spacing: 1px;
   transition: all 0.15s;
-  margin-top: 8px;
+  margin-top: 6px;
 }
-.btn:hover { border-color: #00e5ff; color: #00e5ff; }
 .btn:active { background: #00e5ff; color: #000; }
 .btn.primary { background: #00e5ff; color: #000; border-color: #00e5ff; }
-.btn.primary:hover { box-shadow: 0 0 16px rgba(0,229,255,0.4); }
-.key-hint { color: #666; font-size: 11px; margin-top: 8px; text-align: center; }
+.key-hint { color: #666; font-size: 10px; margin-top: 6px; text-align: center; }
 .key-hint kbd {
-  background: #222;
-  border: 1px solid #444;
-  border-radius: 4px;
-  padding: 1px 6px;
-  font-size: 11px;
-  color: #aaa;
+  background: #222; border: 1px solid #444; border-radius: 4px;
+  padding: 1px 5px; font-size: 10px; color: #aaa;
 }
-/* 手机触屏按钮 */
+
+/* 触屏按钮 - 始终显示 */
 .touch-controls {
-  display: none;
+  display: flex;
   justify-content: center;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 8px;
   flex-wrap: wrap;
 }
 .touch-btn {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border: 2px solid #3a3a5a;
-  border-radius: 14px;
+  border-radius: 12px;
   background: #1a1a2e;
   color: #e0e0e0;
-  font-size: 22px;
+  font-size: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,16 +122,19 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+  -webkit-user-select: none;
   transition: all 0.1s;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 .touch-btn:active {
   background: #00e5ff;
   color: #000;
   border-color: #00e5ff;
-  transform: scale(0.92);
+  transform: scale(0.9);
 }
 .touch-btn.drop-btn {
-  width: 64px;
+  width: 60px;
   background: #ffd740;
   color: #000;
   border-color: #ffd740;
@@ -131,15 +146,67 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
   border-color: #ffab00;
 }
 .touch-btn.rotate-btn {
-  background: #d500f9;
+  background: #7c3aed;
   color: #fff;
-  border-color: #d500f9;
-  font-size: 20px;
+  border-color: #7c3aed;
 }
 .touch-btn.rotate-btn:active {
-  background: #aa00ff;
-  border-color: #aa00ff;
+  background: #6d28d9;
+  border-color: #6d28d9;
 }
+
+/* 开始遮罩 */
+.start-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.start-overlay.hidden { display: none; }
+.start-box {
+  background: #1a1a2e;
+  border: 2px solid #2a2a4a;
+  border-radius: 20px;
+  padding: 36px 28px;
+  text-align: center;
+  max-width: 320px;
+  width: 90%;
+}
+.start-box h1 {
+  color: #00e5ff;
+  font-size: 28px;
+  margin-bottom: 6px;
+  letter-spacing: 4px;
+}
+.start-box .subtitle {
+  color: #666;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+.start-box .big-start-btn {
+  display: block;
+  width: 100%;
+  padding: 18px 0;
+  background: #00e5ff;
+  color: #000;
+  border: none;
+  border-radius: 14px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.start-box .big-start-btn:active {
+  background: #00b8d4;
+  transform: scale(0.96);
+}
+
+/* 游戏结束遮罩 */
 .overlay {
   position: fixed;
   inset: 0;
@@ -153,25 +220,52 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
   background: #1a1a2e;
   border: 2px solid #2a2a4a;
   border-radius: 16px;
-  padding: 30px 40px;
+  padding: 30px 36px;
   text-align: center;
 }
 .overlay-box h2 { color: #00e5ff; font-size: 24px; margin-bottom: 12px; }
 .overlay-box p { color: #aaa; margin-bottom: 18px; font-size: 14px; }
 
-/* 手机端布局 */
-@media (max-width: 600px) {
-  .game-wrapper { flex-direction: column; align-items: center; gap: 10px; padding: 10px; }
-  .side-panel { flex-direction: row; flex-wrap: wrap; justify-content: center; min-width: 0; }
-  .panel-box { flex: 1; min-width: 80px; padding: 10px; }
-  .panel-box h3 { font-size: 11px; }
-  .stat-value { font-size: 22px; }
+/* 手机端 - 纵向布局 */
+@media (max-width: 650px) {
+  .game-wrapper {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+  }
+  .side-panel {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    min-width: 0;
+    width: 100%;
+    gap: 8px;
+  }
+  .panel-box {
+    flex: 1;
+    min-width: 60px;
+    padding: 8px;
+  }
+  .panel-box h3 { font-size: 10px; }
+  .stat-value { font-size: 20px; }
+  .btn { font-size: 12px; padding: 10px 0; }
   .key-hint { display: none; }
-  .touch-controls { display: flex; }
+  .touch-btn { width: 44px; height: 44px; font-size: 18px; }
+  .touch-btn.drop-btn { width: 56px; font-size: 12px; }
 }
 </style>
 </head>
 <body>
+
+<!-- 开始界面 -->
+<div class="start-overlay" id="startOverlay">
+  <div class="start-box">
+    <h1>俄罗斯方块</h1>
+    <div class="subtitle">经典街机游戏</div>
+    <button class="big-start-btn" id="bigStartBtn">开始游戏</button>
+  </div>
+</div>
 
 <div class="game-wrapper">
   <div class="game-main">
@@ -183,8 +277,8 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
       <kbd>空格</kbd> 硬降 &nbsp;
       <kbd>P</kbd> 暂停
     </div>
-    <!-- 手机触屏按钮 -->
-    <div class="touch-controls" id="touchControls">
+    <!-- 触屏按钮 -->
+    <div class="touch-controls">
       <button class="touch-btn" id="touchLeft">&#9664;</button>
       <button class="touch-btn rotate-btn" id="touchRotate">&#8635;</button>
       <button class="touch-btn" id="touchDown">&#9660;</button>
@@ -209,7 +303,6 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
       <div class="stat-value" id="level">1</div>
       <div class="stat-label">等级</div>
     </div>
-    <button class="btn primary" id="btnStart">开始游戏</button>
     <button class="btn" id="btnPause">暂停</button>
   </div>
 </div>
@@ -237,9 +330,22 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
   var levelEl = document.getElementById('level');
   var overlay = document.getElementById('overlayGameOver');
   var finalScoreEl = document.getElementById('finalScore');
+  var startOverlay = document.getElementById('startOverlay');
 
-  gameCanvas.width = COLS * BLOCK;
-  gameCanvas.height = ROWS * BLOCK;
+  // 响应式画布尺寸
+  function resizeCanvas() {
+    var maxW = Math.min(window.innerWidth - 20, 300);
+    var maxH = Math.min(window.innerHeight - 260, 600);
+    var size = Math.min(Math.floor(maxW / COLS), Math.floor(maxH / ROWS));
+    BLOCK = Math.max(22, Math.min(30, size));
+    gameCanvas.width = COLS * BLOCK;
+    gameCanvas.height = ROWS * BLOCK;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', function() {
+    resizeCanvas();
+    drawBoard();
+  });
 
   var TETROMINOS = {
     I: { shapes: [[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],[[0,0,1,0],[0,0,1,0],[0,0,1,0],[0,0,1,0]],[[0,0,0,0],[0,0,0,0],[1,1,1,1],[0,0,0,0]],[[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]]], color: '#00e5ff' },
@@ -254,7 +360,7 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
 
   var board, pieceType, pieceRotation, pieceX, pieceY, nextType;
   var score, lines, level, dropInterval, lastDrop;
-  var gameRunning, gamePaused, gameOver, animId;
+  var gameRunning = false, gamePaused = false, gameOver = false, animId;
 
   function randPiece() { return NAMES[Math.floor(Math.random() * NAMES.length)]; }
   function getShape(type, rot) { return TETROMINOS[type].shapes[rot % 4]; }
@@ -373,11 +479,11 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
     ctx.fillStyle = color;
     ctx.fillRect(x + 1, y + 1, size - 2, size - 2);
     ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.fillRect(x + 1, y + 1, size - 2, 4);
-    ctx.fillRect(x + 1, y + 1, 4, size - 2);
+    ctx.fillRect(x + 1, y + 1, size - 2, Math.max(3, size * 0.12));
+    ctx.fillRect(x + 1, y + 1, Math.max(3, size * 0.12), size - 2);
     ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.fillRect(x + 1, y + size - 5, size - 2, 4);
-    ctx.fillRect(x + size - 5, y + 1, 4, size - 2);
+    ctx.fillRect(x + 1, y + size - Math.max(4, size * 0.15), size - 2, Math.max(3, size * 0.12));
+    ctx.fillRect(x + size - Math.max(4, size * 0.15), y + 1, Math.max(3, size * 0.12), size - 2);
   }
 
   function drawBoard() {
@@ -446,7 +552,7 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
       gameCtx.fillStyle = 'rgba(0,0,0,0.6)';
       gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
       gameCtx.fillStyle = '#fff';
-      gameCtx.font = 'bold 24px "PingFang SC", "Microsoft YaHei", sans-serif';
+      gameCtx.font = 'bold ' + Math.floor(BLOCK * 0.8) + 'px "PingFang SC", "Microsoft YaHei", sans-serif';
       gameCtx.textAlign = 'center';
       gameCtx.fillText('已暂停', gameCanvas.width / 2, gameCanvas.height / 2);
     }
@@ -491,6 +597,7 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
   }
 
   function startGame() {
+    resizeCanvas();
     createBoard();
     score = 0; lines = 0; level = 1;
     dropInterval = 800;
@@ -499,6 +606,7 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
     gamePaused = false;
     updateStats();
     overlay.style.display = 'none';
+    startOverlay.classList.add('hidden');
     nextType = randPiece();
     spawnPiece();
     lastDrop = performance.now();
@@ -531,73 +639,58 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
     drawBoard();
   });
 
-  // 触屏按钮事件
-  function addTouchListeners(id, action, repeat) {
+  // 通用触屏/鼠标按钮事件
+  function addButtonListeners(id, action, repeatMs) {
     var btn = document.getElementById(id);
     var timer = null;
 
     function doAction(e) {
-      e.preventDefault();
+      if (e) e.preventDefault();
       if (!gameRunning || gameOver || gamePaused) return;
       action();
       drawBoard();
     }
 
-    btn.addEventListener('touchstart', function(e) {
+    function startRepeat(e) {
       e.preventDefault();
       if (!gameRunning || gameOver || gamePaused) return;
       action();
       drawBoard();
-      if (repeat) {
+      if (repeatMs && timer === null) {
         timer = setInterval(function() {
-          if (!gameRunning || gameOver || gamePaused) { clearInterval(timer); return; }
+          if (!gameRunning || gameOver || gamePaused) { stopRepeat(); return; }
           action();
           drawBoard();
-        }, repeat);
+        }, repeatMs);
       }
-    }, { passive: false });
+    }
 
-    btn.addEventListener('touchend', function(e) {
-      e.preventDefault();
+    function stopRepeat() {
       if (timer) { clearInterval(timer); timer = null; }
-    });
+    }
 
-    btn.addEventListener('touchcancel', function(e) {
-      if (timer) { clearInterval(timer); timer = null; }
-    });
-
-    // 鼠标点击也支持（电脑上用）
-    btn.addEventListener('mousedown', function(e) {
-      e.preventDefault();
-      if (!gameRunning || gameOver || gamePaused) return;
-      action();
-      drawBoard();
-      if (repeat) {
-        timer = setInterval(function() {
-          if (!gameRunning || gameOver || gamePaused) { clearInterval(timer); return; }
-          action();
-          drawBoard();
-        }, repeat);
-      }
-    });
-
-    btn.addEventListener('mouseup', function(e) {
-      if (timer) { clearInterval(timer); timer = null; }
-    });
-
-    btn.addEventListener('mouseleave', function(e) {
-      if (timer) { clearInterval(timer); timer = null; }
-    });
+    btn.addEventListener('touchstart', startRepeat, { passive: false });
+    btn.addEventListener('touchend', stopRepeat);
+    btn.addEventListener('touchcancel', stopRepeat);
+    btn.addEventListener('mousedown', startRepeat);
+    btn.addEventListener('mouseup', stopRepeat);
+    btn.addEventListener('mouseleave', stopRepeat);
   }
 
-  addTouchListeners('touchLeft', function() { movePiece(-1, 0); }, 80);
-  addTouchListeners('touchRight', function() { movePiece(1, 0); }, 80);
-  addTouchListeners('touchDown', function() { movePiece(0, 1); }, 50);
-  addTouchListeners('touchRotate', function() { rotatePiece(); }, null);
-  addTouchListeners('touchDrop', function() { hardDrop(); updateStats(); }, null);
+  addButtonListeners('touchLeft', function() { movePiece(-1, 0); }, 80);
+  addButtonListeners('touchRight', function() { movePiece(1, 0); }, 80);
+  addButtonListeners('touchDown', function() { movePiece(0, 1); }, 50);
+  addButtonListeners('touchRotate', function() { rotatePiece(); }, null);
+  addButtonListeners('touchDrop', function() { hardDrop(); updateStats(); }, null);
 
-  // 按钮事件
-  document.getElementById('btnStart').addEventListener('click', startGame);
+  // 大开始按钮
+  document.getElementById('bigStartBtn').addEventListener('click', startGame);
+  document.getElementById('bigStartBtn').addEventListener('touchend', function(e) {
+    e.preventDefault();
+    startGame();
+  });
+
+  // 其他按钮
   document.getElementById('btnPause').addEventListener('click', togglePause);
   document.getElementById('btnRestart').addEventListener('click', startGame);
   overlay.addEventListener('click', function(e) {
