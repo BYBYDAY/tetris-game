@@ -13,7 +13,7 @@ body {
   align-items: center;
   min-height: 100vh;
   font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  overflow: hidden;
+  overflow-y: auto;
   touch-action: manipulation;
   user-select: none;
 }
@@ -87,6 +87,59 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
   font-size: 11px;
   color: #aaa;
 }
+/* 手机触屏按钮 */
+.touch-controls {
+  display: none;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.touch-btn {
+  width: 52px;
+  height: 52px;
+  border: 2px solid #3a3a5a;
+  border-radius: 14px;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition: all 0.1s;
+}
+.touch-btn:active {
+  background: #00e5ff;
+  color: #000;
+  border-color: #00e5ff;
+  transform: scale(0.92);
+}
+.touch-btn.drop-btn {
+  width: 64px;
+  background: #ffd740;
+  color: #000;
+  border-color: #ffd740;
+  font-size: 13px;
+  font-weight: 700;
+}
+.touch-btn.drop-btn:active {
+  background: #ffab00;
+  border-color: #ffab00;
+}
+.touch-btn.rotate-btn {
+  background: #d500f9;
+  color: #fff;
+  border-color: #d500f9;
+  font-size: 20px;
+}
+.touch-btn.rotate-btn:active {
+  background: #aa00ff;
+  border-color: #aa00ff;
+}
 .overlay {
   position: fixed;
   inset: 0;
@@ -105,12 +158,16 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
 }
 .overlay-box h2 { color: #00e5ff; font-size: 24px; margin-bottom: 12px; }
 .overlay-box p { color: #aaa; margin-bottom: 18px; font-size: 14px; }
+
+/* 手机端布局 */
 @media (max-width: 600px) {
   .game-wrapper { flex-direction: column; align-items: center; gap: 10px; padding: 10px; }
   .side-panel { flex-direction: row; flex-wrap: wrap; justify-content: center; min-width: 0; }
   .panel-box { flex: 1; min-width: 80px; padding: 10px; }
   .panel-box h3 { font-size: 11px; }
   .stat-value { font-size: 22px; }
+  .key-hint { display: none; }
+  .touch-controls { display: flex; }
 }
 </style>
 </head>
@@ -125,6 +182,14 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
       <kbd>&darr;</kbd> 加速 &nbsp;
       <kbd>空格</kbd> 硬降 &nbsp;
       <kbd>P</kbd> 暂停
+    </div>
+    <!-- 手机触屏按钮 -->
+    <div class="touch-controls" id="touchControls">
+      <button class="touch-btn" id="touchLeft">&#9664;</button>
+      <button class="touch-btn rotate-btn" id="touchRotate">&#8635;</button>
+      <button class="touch-btn" id="touchDown">&#9660;</button>
+      <button class="touch-btn" id="touchRight">&#9654;</button>
+      <button class="touch-btn drop-btn" id="touchDrop">硬降</button>
     </div>
   </div>
   <div class="side-panel">
@@ -450,7 +515,7 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
     document.getElementById('btnPause').textContent = gamePaused ? '继续' : '暂停';
   }
 
-  // 键盘
+  // 键盘控制
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Enter' && (!gameRunning || gameOver)) { e.preventDefault(); startGame(); return; }
     if (!gameRunning || gameOver) return;
@@ -466,6 +531,72 @@ canvas#gameCanvas { display: block; border-radius: 4px; }
     drawBoard();
   });
 
+  // 触屏按钮事件
+  function addTouchListeners(id, action, repeat) {
+    var btn = document.getElementById(id);
+    var timer = null;
+
+    function doAction(e) {
+      e.preventDefault();
+      if (!gameRunning || gameOver || gamePaused) return;
+      action();
+      drawBoard();
+    }
+
+    btn.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      if (!gameRunning || gameOver || gamePaused) return;
+      action();
+      drawBoard();
+      if (repeat) {
+        timer = setInterval(function() {
+          if (!gameRunning || gameOver || gamePaused) { clearInterval(timer); return; }
+          action();
+          drawBoard();
+        }, repeat);
+      }
+    }, { passive: false });
+
+    btn.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      if (timer) { clearInterval(timer); timer = null; }
+    });
+
+    btn.addEventListener('touchcancel', function(e) {
+      if (timer) { clearInterval(timer); timer = null; }
+    });
+
+    // 鼠标点击也支持（电脑上用）
+    btn.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      if (!gameRunning || gameOver || gamePaused) return;
+      action();
+      drawBoard();
+      if (repeat) {
+        timer = setInterval(function() {
+          if (!gameRunning || gameOver || gamePaused) { clearInterval(timer); return; }
+          action();
+          drawBoard();
+        }, repeat);
+      }
+    });
+
+    btn.addEventListener('mouseup', function(e) {
+      if (timer) { clearInterval(timer); timer = null; }
+    });
+
+    btn.addEventListener('mouseleave', function(e) {
+      if (timer) { clearInterval(timer); timer = null; }
+    });
+  }
+
+  addTouchListeners('touchLeft', function() { movePiece(-1, 0); }, 80);
+  addTouchListeners('touchRight', function() { movePiece(1, 0); }, 80);
+  addTouchListeners('touchDown', function() { movePiece(0, 1); }, 50);
+  addTouchListeners('touchRotate', function() { rotatePiece(); }, null);
+  addTouchListeners('touchDrop', function() { hardDrop(); updateStats(); }, null);
+
+  // 按钮事件
   document.getElementById('btnStart').addEventListener('click', startGame);
   document.getElementById('btnPause').addEventListener('click', togglePause);
   document.getElementById('btnRestart').addEventListener('click', startGame);
